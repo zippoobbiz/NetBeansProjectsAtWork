@@ -4,6 +4,7 @@
  */
 package databasecontroller;
 
+import databasecontroller.entity.ShareDetails;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -13,9 +14,15 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -132,11 +139,10 @@ public class FileHelper {
 
                 br.read(chars);
                 line = String.copyValueOf(chars);
-            } while (!line.contains("companyId") && !line.contains("html") );
+            } while (!line.contains("companyId") && !line.contains("html"));
             if (line.charAt(84) == line.charAt(95)) {
                 return line.substring(85, 95);
-            }else if(line.contains("html"))
-            {
+            } else if (line.contains("html")) {
                 return "html";
             }
 
@@ -152,5 +158,79 @@ public class FileHelper {
             }
         }
         return "";
+    }
+
+    public static HashSet readUniqueLinesToArray(String fileName) {
+        BufferedReader br = null;
+        HashSet<String> Codes = new HashSet();
+        try {
+            String path = new File(".").getAbsolutePath();
+            path = path.substring(0, path.length() - 1) + RESOURCE_FOLDER + fileName;
+
+            br = new BufferedReader(new FileReader(path));
+
+            String line = br.readLine();
+            while (line != null) {
+                Codes.add(line.substring(0, line.indexOf(",")));
+                line = br.readLine();
+            }
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                br.close();
+            } catch (IOException ex) {
+                Logger.getLogger(FileHelper.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return Codes;
+    }
+
+    public static HashMap<String, ShareDetails> calculateDistribution(String fileName) {
+        BufferedReader br = null;
+        HashMap<String, ShareDetails> distribution = new HashMap();
+        try {
+            String path = new File(".").getAbsolutePath();
+            path = path.substring(0, path.length() - 1) + RESOURCE_FOLDER + fileName;
+
+            br = new BufferedReader(new FileReader(path));
+
+            String line = br.readLine();
+            while (line != null) {
+                String temp = line.substring(0, line.indexOf(","));
+                String dateString = line.substring(line.indexOf(",")+1, line.indexOf(",", line.indexOf(",") + 1));
+                DateFormat format = new SimpleDateFormat("dd-mm-yyyy", Locale.ENGLISH);
+                Date date = new Date();
+                try {
+                    date = format.parse(dateString);
+                } catch (ParseException ex) {
+                    Logger.getLogger(FileHelper.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                if (distribution.get(temp) == null) {
+                    distribution.put(temp, new ShareDetails(date));
+                } else {
+                    ShareDetails tmp = distribution.get(temp);
+                    tmp.setItemAmount(tmp.getItemAmount() + 1);
+                    if (date.before(tmp.getLastUpdate())) {
+                        tmp.setLastUpdate(date);
+                    }
+                    distribution.put(temp, tmp);
+                }
+                line = br.readLine();
+            }
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                br.close();
+            } catch (IOException ex) {
+                Logger.getLogger(FileHelper.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return distribution;
     }
 }

@@ -4,6 +4,7 @@
  */
 package databasecontroller;
 
+import databasecontroller.entity.Pair;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
@@ -44,6 +45,8 @@ public class Main4 {
         Main4 m = new Main4();
         m.report();
         m.listEmptyCompaniesShares();
+        m.CheckIntigrityOfMissingCompanies();
+//        m.listMissingCompaniesShares();
     }
 
     /**
@@ -174,8 +177,29 @@ public class Main4 {
 //
 //    }
     public void listMissingCompaniesShares() {
-        for (String s : missingCompaniesShareId) {
-            System.out.println(s);
+        Connection conn = DBHelper.getConnectionFromCertainDB("bcmglobalshares");
+        String html = "";
+        try {
+            Statement stmt = conn.createStatement();
+            ResultSet rs = null;
+            String sql = null;
+            for (String shareId : missingCompaniesShareId) {
+                sql = "SELECT companyName, isincode, exchangecode,securitytype, trickersymbol FROM sharemanager where morningstarPerformanceid = '" + shareId + "'";
+                rs = stmt.executeQuery(sql);
+                if (rs.next()) {
+                    html += "<tr>";
+                }
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(Main4.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        for (Pair p : pairList) {
+            if (p.getShare1CompanyName() != null && p.getShare2CompanyName() != null && !p.getShare1CompanyName().equals(p.getShare2CompanyName())) {
+                System.out.println(p.getCompany());
+                System.out.println(p.getShare1CompanyName() + " - " + p.getShare2CompanyName());
+            }
+
         }
     }
 
